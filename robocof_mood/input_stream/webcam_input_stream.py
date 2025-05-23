@@ -19,6 +19,12 @@ class WebcamInputStream(InputStream):
         if not ret:
             print("Error: Failed to capture image.")
             return None
+        
+        # 🖼️ Show the frame for debugging
+        cv2.imshow("Debug Frame", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            exit()  # Press 'q' to exit the window
+        
         return frame
 
     def stop(self):

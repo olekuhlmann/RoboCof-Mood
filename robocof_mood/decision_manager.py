@@ -32,10 +32,10 @@ class DecisionManager:
             Decision.CARRY_OUT_ACTION if the decision is to carry out the action,
             Decision.TIMEOUT if no other decision was taken within the timeout.
         """
-        gestures = self.__gesture_recognizer.start()
-        print(f"Recognized gestures: {gestures}")
+        gesture = self.__gesture_recognizer.start()
+        print(f"Recognized gestures: {gesture}")
         
-        return Decision.CARRY_OUT_ACTION if gestures else Decision.ABORT # dummy TODO change to real decision-making process
+        return Decision.CARRY_OUT_ACTION if gesture else Decision.ABORT # dummy TODO change to real decision-making process
         
         
 
