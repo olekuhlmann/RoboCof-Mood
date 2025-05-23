@@ -1,5 +1,8 @@
 from input_stream.input_stream import InputStream
+from input_stream.webcam_input_stream import WebcamInputStream
+from gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from enum import Enum
+
 
 
 class Decision(Enum):
@@ -18,6 +21,7 @@ class DecisionManager:
             live_feed (LiveFeed): The live feed object to get the current image from.
         """
         self.__live_feed = input_stream
+        self.__gesture_recognizer = GestureRecognizer([Gesture.THUMB_UP, Gesture.OPEN_PALM])
         
     async def make_decision(self) -> Decision:
         """
@@ -28,6 +32,18 @@ class DecisionManager:
             Decision.CARRY_OUT_ACTION if the decision is to carry out the action,
             Decision.TIMEOUT if no other decision was taken within the timeout.
         """
-        pass
+        gestures = self.__gesture_recognizer.start()
+        print(f"Recognized gestures: {gestures}")
+        
+        return Decision.CARRY_OUT_ACTION if gestures else Decision.ABORT # dummy TODO change to real decision-making process
         
         
+
+if __name__ == "__main__":
+    # Example usage
+    input_stream = WebcamInputStream()
+    input_stream.start()
+    decision_manager = DecisionManager(input_stream)
+    decision = decision_manager.make_decision()
+    print(f"Decision: {decision}")
+    input_stream.end()
