@@ -1,9 +1,9 @@
-from typing import Optional
+import asyncio
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-
 from enum import Enum
+from typing import Optional
 
 
 MODEL_PATH = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task'
@@ -31,14 +31,21 @@ class GestureRecognizer:
         options = vision.GestureRecognizerOptions(base_options=base_options)
         self.__recognizer = vision.GestureRecognizer.create_from_options(options)
         
-    def start(self) -> list[Gesture]:
+    async def start(self) -> list[Gesture]:
         """
         Starts the gesture recognition process. Returns the recognized gesture once a gesture from `gestures` is recognized.
         
         Returns:
             Gesture: The recognized gesture.
         """        
-        pass
+        while True:
+            # TODO
+            
+            # yield control to allow other tasks to run
+            await asyncio.sleep(0.01)
+        
+        
+    
     
     
     def recognize(self, image: mp.Image) -> list[Gesture]:
