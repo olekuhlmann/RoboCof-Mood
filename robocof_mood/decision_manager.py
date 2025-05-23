@@ -20,12 +20,12 @@ class DecisionManager:
         Args:
             live_feed (LiveFeed): The live feed object to get the current image from.
         """
-        self.__live_feed = input_stream
-        self.__gesture_recognizer = GestureRecognizer([Gesture.THUMB_UP, Gesture.OPEN_PALM])
+        self.input_stream = input_stream
+        self.__gesture_recognizer = GestureRecognizer([Gesture.THUMB_UP, Gesture.OPEN_PALM], input_stream)
         
-    async def make_decision(self) -> Decision:
+    def make_decision(self) -> Decision: # TODO make it async again
         """
-        Makes a decision based on the live feed.
+        Makes a decision bpased on the live feed.
         
         Returns:
             Decision.ABORT if the decision is to abort the action,
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     decision_manager = DecisionManager(input_stream)
     decision = decision_manager.make_decision()
     print(f"Decision: {decision}")
-    input_stream.end()
+    input_stream.stop()
