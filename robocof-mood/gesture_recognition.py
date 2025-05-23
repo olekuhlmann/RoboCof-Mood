@@ -1,3 +1,4 @@
+from typing import Optional
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -6,9 +7,6 @@ from enum import Enum
 
 
 MODEL_PATH = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task'
-
-
-
 
 class Gesture(Enum):
     UNKNOWN = 0
@@ -33,7 +31,7 @@ class GestureRecognizer:
         options = vision.GestureRecognizerOptions(base_options=base_options)
         self.__recognizer = vision.GestureRecognizer.create_from_options(options)
         
-    def start(self) -> Gesture:
+    def start(self) -> list[Gesture]:
         """
         Starts the gesture recognition process. Returns the recognized gesture once a gesture from `gestures` is recognized.
         
@@ -42,7 +40,8 @@ class GestureRecognizer:
         """        
         pass
     
-    def recognize(self, image: mp.Image) -> Gesture:
+    
+    def recognize(self, image: mp.Image) -> list[Gesture]:
         """
         Recognizes the gesture in the given image.
 
@@ -53,20 +52,38 @@ class GestureRecognizer:
             Gesture: The recognized gesture.
         """
         result = self.__recognizer.recognize(image)
-        gesture = self.__parse_result(result)
-        return gesture
+        gestures = self.__parse_result(result)
+        return gestures
     
-    def __parse_result(self, result) -> Gesture:
+    def __parse_result(self, result) -> list[Gesture]:
         """Parses the result of the gesture recognition.
-        This method is called when a gesture is recognized.
 
         Args:
             result (vision.GestureRecognizerResult): The result of the gesture recognition.
 
         Returns:
-            Gesture: Gesture recognized.
+            list[Gesture]: All gestures recognized.
         """
-        pass
+        gestures = result.gestures
+        ret = [self.__parse_gesture(gesture.category_name) for gesture in gestures]
+        return ret
+    
+    def __parse_gesture(self, gesture: Optional[str]) -> Gesture:
+        """Parses the gesture label from GestureRecognizerResult to Gesture enum.
+
+        Args:
+            gesture (Optional[str]): category_name of the gesture.
+            If None, returns Gesture.UNKNOWN.
+
+        Returns:
+            Gesture: The parsed gesture.
+        """
+        if gesture is None:
+            return Gesture.UNKNOWN
+        try:
+            return Gesture[gesture.upper()]
+        except KeyError:
+            return Gesture.UNKNOWN
         
     
     def stop(self):
