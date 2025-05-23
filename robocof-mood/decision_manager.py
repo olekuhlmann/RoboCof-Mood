@@ -1,4 +1,4 @@
-from .live_feed import LiveFeed
+from input_stream.input_stream import InputStream
 from enum import Enum
 
 
@@ -11,13 +11,13 @@ class DecisionManager:
     """A class to manage the decision-making process for the robot of whether or not to carry out an action.
     """
     
-    def __init__(self, live_feed: LiveFeed):
+    def __init__(self, input_stream: InputStream):
         """Constructor
 
         Args:
             live_feed (LiveFeed): The live feed object to get the current image from.
         """
-        self.__live_feed = live_feed
+        self.__live_feed = input_stream
         
     async def make_decision(self) -> Decision:
         """
