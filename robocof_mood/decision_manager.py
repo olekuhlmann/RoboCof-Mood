@@ -8,6 +8,7 @@ from robocof_mood.seat_recognition.seat_recognizer import SeatRecognizer, SeatSt
 from enum import Enum
 from collections import Counter
 from robocof_mood.face_recognition.face_recognition import FaceRecognizer
+import numpy as np
 
 
 class Decision(Enum):
@@ -49,7 +50,7 @@ class DecisionManager:
         self.__debug_mode = debug_mode
         self.__timeout = timeout if not debug_mode else float("inf")
 
-    async def make_decision(self) -> Decision:
+    async def make_decision(self, name="user") -> Decision:
         """
         Makes a decision bpased on the live feed.
 
@@ -68,10 +69,10 @@ class DecisionManager:
             # Placeholder for seat recognition logic
             return await self.__seat_recognizer.start()
 
-        async def face_recognition_task():
+        async def face_recognition_task(name="user"):
             """A task to run the face recognition in the background."""
             # Placeholder for face recognition logic
-            return await self.__face_recognizer.is_person_in_stream("");
+            return await self.__face_recognizer.is_person_in_stream_loop(name);
 
         async def timeout_task(timeout: int):
             """A task to wait for a timeout (in seconds)"""
@@ -158,6 +159,14 @@ class DecisionManager:
         """Set the timeout for the decision-making process."""
         if not self.__debug_mode:
             self.__timeout = timeout
+
+    def set_image_from_user(self, name:str, image:np.ndarray):
+        """Set the image from the user for face recognition."""
+        
+        print(f"[FACE_RECOGNIZER] Setting image for user {name}")
+        self.__face_recognizer.set_image_from_user(name, image)
+
+        
 
     timeout = property(__get_timeout, __set_timeout)
 
