@@ -1,32 +1,44 @@
 import asyncio
 from input_stream.input_stream import InputStream
 from input_stream.webcam_input_stream import WebcamInputStream
+from input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
 from gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from enum import Enum
 
 
 class Decision(Enum):
     USER_ABORT = 0
-    TIMEOUT = 1
-    CARRY_OUT_ACTION = 2
-    NO_USER_PRESENT = 3
-    ERROR = 4
+    CARRY_OUT_ACTION = 1
+    TIMEOUT_NO_USER_PRESENT = 2
+    TIMEOUT_WRONG_USER_PRESENT = 3
+    TIMEOUT_CORRECT_USER_PRESENT = 4
+    TIMEOUT = 5
+    ERROR = 6
+
+
+GESTURES_POSITIVE = [Gesture.THUMB_UP, Gesture.CLOSED_FIST]
+GESTURES_NEGATIVE = [Gesture.OPEN_PALM]
 
 
 class DecisionManager:
     """A class to manage the decision-making process for the robot of whether or not to carry out an action."""
 
-    def __init__(self, input_stream: InputStream, timeout: int = 15):
+    def __init__(
+        self, input_stream: InputStream, timeout: int = 15, debug_mode: bool = False
+    ):
         """Constructor
 
         Args:
             live_feed (LiveFeed): The live feed object to get the current image from.
+            timeout (int, optional): The timeout in seconds to wait for a decision. Defaults to 15.
+            debug_mode (bool, optional): Does not return any decision and only prints debug information. Defaults to False.
         """
         self.input_stream = input_stream
         self.__gesture_recognizer = GestureRecognizer(
-            [Gesture.THUMB_UP, Gesture.OPEN_PALM], input_stream
+            GESTURES_POSITIVE + GESTURES_NEGATIVE, input_stream, debug_mode=debug_mode
         )
-        self.__timeout = timeout
+        self.__debug_mode = debug_mode
+        self.__timeout = timeout if not debug_mode else float("inf")
 
     async def make_decision(self) -> Decision:
         """
@@ -57,11 +69,13 @@ class DecisionManager:
             await asyncio.sleep(timeout)
             return None
 
+        self.input_stream.start()
+
         tasks = {
             asyncio.create_task(gesture_recognition_task()): "gesture",
             asyncio.create_task(seat_recognition_task()): "seat",
             asyncio.create_task(face_recognition_task()): "face",
-            asyncio.create_task(timeout_task(self.__timeout)): "timeout",
+            asyncio.create_task(timeout_task(self.timeout)): "timeout",
         }
 
         try:
@@ -78,10 +92,10 @@ class DecisionManager:
                     print(f"Task {task_name} completed with result: {result}")
 
                     if task_name == "gesture":
-                        if Gesture.THUMB_UP in result:
+                        if any(gesture in result for gesture in GESTURES_POSITIVE):
                             decision = Decision.CARRY_OUT_ACTION
                             break
-                        if Gesture.OPEN_PALM in result:
+                        if any(gesture in result for gesture in GESTURES_NEGATIVE):
                             decision = Decision.USER_ABORT
                             break
 
@@ -108,19 +122,31 @@ class DecisionManager:
 
         except asyncio.CancelledError as e:
             print(f"Decision-making process was cancelled: {e}")
+        finally:
+            self.input_stream.stop()
 
         return Decision.ERROR
+
+    def __get_timeout(self) -> int:
+        """Get the timeout for the decision-making process."""
+        return self.__timeout
+
+    def __set_timeout(self, timeout: int):
+        """Set the timeout for the decision-making process."""
+        if not self.__debug_mode:
+            self.__timeout = timeout
+
+    timeout = property(__get_timeout, __set_timeout)
 
 
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
-    input_stream.start()
-    decision_manager = DecisionManager(input_stream)
+    # input_stream = stream = MJPEGAPIInputStream("http://192.168.137.203:8000/video_feed")
 
     async def main():
+        decision_manager = DecisionManager(input_stream, debug_mode=True)
         decision = await decision_manager.make_decision()
-        input_stream.stop()
         print(f"Final decision: {decision}")
 
     asyncio.run(main())
