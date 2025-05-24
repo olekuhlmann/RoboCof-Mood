@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     """
     # ------------- STARTUP ------------- #
     input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
+    #input_stream = WebcamInputStream() # for debugging
     decision_manager = DecisionManager(input_stream, timeout=DEFAULT_TIMEOUT)
 
     app.state.decision_manager = decision_manager
@@ -97,5 +98,5 @@ async def decision_entrypoint(
     return {"detail": "Decision accepted, result will be sent to callback"}
 
 
-if __name__ == "__main__":
-    uvicorn.run("robocof_mood.main:app", host="0.0.0.0", port=8000, reload=True)
+
+# start using uvicorn robocof_mood.main:app --reload  
