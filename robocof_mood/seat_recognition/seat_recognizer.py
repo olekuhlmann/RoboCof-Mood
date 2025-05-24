@@ -138,14 +138,14 @@ class SeatRecognizer:
 
     def parse_result(self, result):
         """
-        result in the form [bounding box of closest chair if exists, list of people, is seat empty boolesn]
+        result in the form [bounding box of closest chair if exists, list of people, is seat empty boolean]
         """
         #print(result)
         if result[2] == True: #seat empty
             return SeatStatus.SEAT_EMPTY
         
         elif result[0]: #chair detected
-            if result[1]: #if people detected
+            if not result[1]: #if no people detected
                 return SeatStatus.SEAT_EMPTY
             
             return SeatStatus.SEAT_OCCUPIED
@@ -173,7 +173,7 @@ class SeatRecognizer:
                 continue
         
             status = self.recognize(frame, self.model)
-            #print(status)
+            print(status)
             self.seatStatus_counter[status] += 1
             # yield control to allow other tasks to run
             await asyncio.sleep(0.01)

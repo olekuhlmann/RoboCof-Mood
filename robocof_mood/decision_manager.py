@@ -111,6 +111,7 @@ class DecisionManager:
 
                     elif task_name == "timeout":
                         seat_status = self.__seat_recognizer.output()
+                        print("Seat Status:", seat_status )
                         if seat_status == SeatStatus.SEAT_EMPTY or seat_status == SeatStatus.NO_CHAIRS_NO_PEOPLE:
                             decision = Decision.TIMEOUT_NO_USER_PRESENT
                         else:
