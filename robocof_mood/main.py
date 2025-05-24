@@ -6,7 +6,7 @@ from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream
 from robocof_mood.input_stream.webcam_input_stream import WebcamInputStream
 from robocof_mood.decision_manager import DecisionManager
 
-LIVESTREAM_URL = "http://10.143.186.203:5000/video_feed"
+LIVESTREAM_URL = "http://192.168.137.204:8000/video_feed"
 # Default timeout in seconds
 DEFAULT_TIMEOUT = 15
 MAX_TIMEOUT = 60 * 2  # Maximum timeout allowed for a decision request
@@ -20,8 +20,8 @@ async def lifespan(app: FastAPI):
     Exposes the `decision_manager` instance to the application context.
     """
     # ------------- STARTUP ------------- #
-    #input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
-    input_stream = WebcamInputStream() # for debugging
+    input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
+    #input_stream = WebcamInputStream() # for debugging
     decision_manager = DecisionManager(input_stream, timeout=DEFAULT_TIMEOUT)
 
     app.state.decision_manager = decision_manager
