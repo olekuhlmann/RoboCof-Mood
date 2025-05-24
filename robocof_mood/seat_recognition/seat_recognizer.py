@@ -4,6 +4,7 @@ import cv2
 import json
 import warnings
 warnings.filterwarnings("ignore")
+from collections import Counter
 
 
 import asyncio
@@ -36,6 +37,23 @@ class SeatRecognizer:
         self.__input_stream = input_stream
         #Save and load the initialized model: If you're calling it repeatedly, warm it once and serialize with torch.save(model.state_dict()) or TorchScript.
         #debug mode?
+               # Loading Model
+        self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+
+
+        # Configuring Model
+        self.model.cpu()  # .cpu() ,or .cuda()
+        self.model.conf = 0.25  # NMS confidence threshold
+        self.model.iou = 0.45  # NMS IoU threshold
+        self.model.agnostic = False  # NMS class-agnostic
+        self.model.multi_label = False  # NMS multiple labels per box
+        # (optional list) filter by class, i.e. = [0, 15, 16] for COCO persons, cats and dogs
+        self.model.classes = [0, 56]
+        self.model.max_det = 20  # maximum number of detections per image
+        self.model.amp = False  # Automatic Mixed Precision (AMP) inference
+
+        #counter
+        self.seatStatus_counter = Counter()
             
 
 
@@ -139,10 +157,6 @@ class SeatRecognizer:
         else:
             return SeatStatus.NO_CHAIRS_NO_PEOPLE
 
-
-     
-
-
     async def start(self):
         """
         Starts check for seats and people
@@ -150,33 +164,23 @@ class SeatRecognizer:
         Returns:
             SeatStatus code corresponding to the specific scenario
         """
-        # Loading Model
-        model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
-
-
-        # Configuring Model
-        model.cpu()  # .cpu() ,or .cuda()
-        model.conf = 0.25  # NMS confidence threshold
-        model.iou = 0.45  # NMS IoU threshold
-        model.agnostic = False  # NMS class-agnostic
-        model.multi_label = False  # NMS multiple labels per box
-        # (optional list) filter by class, i.e. = [0, 15, 16] for COCO persons, cats and dogs
-        model.classes = [0, 56]
-        model.max_det = 20  # maximum number of detections per image
-        model.amp = False  # Automatic Mixed Precision (AMP) inference
+ 
         
         while True:
             frame = self.__input_stream.capture_frame()
             if frame is None:
                 print("[Seat-detection]: Failed to capture image.")
-                break
+                continue
         
-
+            status = self.recognize(frame, self.model)
+            #print(status)
+            self.seatStatus_counter[status] += 1
             # yield control to allow other tasks to run
             await asyncio.sleep(0.01)
-            return self.recognize(frame, model)
+            
                     
-
+    def output(self):
+        return self.seatStatus_counter.most_common(1)[0][0]
 
 if __name__ == "__main__":
     async def main():

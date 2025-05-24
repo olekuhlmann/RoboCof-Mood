@@ -16,7 +16,7 @@ class Decision(Enum):
     TIMEOUT = 5
     ERROR = 6
 
-seatStatus_counter = Counter()
+
 
 GESTURES_POSITIVE = [Gesture.THUMB_UP, Gesture.CLOSED_FIST]
 GESTURES_NEGATIVE = [Gesture.OPEN_PALM]
@@ -104,12 +104,13 @@ class DecisionManager:
                             break
 
                     elif task_name == "seat":
-                        seatStatus_counter[result] += 1
+                        #this should never trigger
+                        print(result)
                     elif task_name == "face":
                         pass
 
                     elif task_name == "timeout":
-                        seat_status = seatStatus_counter.most_common(1)
+                        seat_status = self.__seat_recognizer.output()
                         if seat_status == SeatStatus.SEAT_EMPTY or seat_status == SeatStatus.NO_CHAIRS_NO_PEOPLE:
                             decision = Decision.TIMEOUT_NO_USER_PRESENT
                         else:
@@ -152,7 +153,7 @@ class DecisionManager:
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
-    # input_stream = stream = MJPEGAPIInputStream("http://192.168.137.203:8000/video_feed")
+    #input_stream = stream = MJPEGAPIInputStream("http://192.168.137.203:8000/video_feed")
 
     async def main():
         decision_manager = DecisionManager(input_stream, debug_mode=True)
