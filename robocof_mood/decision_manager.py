@@ -4,7 +4,9 @@ from robocof_mood.input_stream.input_stream import InputStream
 from robocof_mood.input_stream.webcam_input_stream import WebcamInputStream
 from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
 from robocof_mood.gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
+from robocof_mood.seat_recognition.seat_recognizer import SeatRecognizer, SeatStatus 
 from enum import Enum
+from collections import Counterfrom 
 from robocof_mood.face_recognition.face_recognition import FaceRecognizer
 
 
@@ -17,6 +19,7 @@ class Decision(Enum):
     TIMEOUT = 5
     ERROR = 6
 
+seatStatus_counter = Counter()
 
 GESTURES_POSITIVE = [Gesture.THUMB_UP, Gesture.CLOSED_FIST]
 GESTURES_NEGATIVE = [Gesture.OPEN_PALM]
@@ -42,6 +45,7 @@ class DecisionManager:
         self.__face_recognizer = FaceRecognizer(
             input_stream, debug_mode=debug_mode
         )
+        self.__seat_recognizer = SeatRecognizer(input_stream)
         self.__debug_mode = debug_mode
         self.__timeout = timeout if not debug_mode else float("inf")
 
@@ -62,7 +66,7 @@ class DecisionManager:
         async def seat_recognition_task():
             """A task to run the seat recognition in the background."""
             # Placeholder for seat recognition logic
-            return -1
+            return await self.__seat_recognizer.start()
 
         async def face_recognition_task():
             """A task to run the face recognition in the background."""
@@ -94,7 +98,8 @@ class DecisionManager:
                 for task in done:
                     result = task.result()
                     task_name = tasks[task]
-                    print(f"Task {task_name} completed with result: {result}")
+                    if task_name != "seat":
+                        print(f"Task {task_name} completed with result: {result}")
 
                     if task_name == "gesture":
                         if any(gesture in result for gesture in GESTURES_POSITIVE):
@@ -105,7 +110,7 @@ class DecisionManager:
                             break
 
                     elif task_name == "seat":
-                        pass
+                        seatStatus_counter[result] += 1
                     elif task_name == "face":
                         result:Optional[bool] = result
                         if result is None:
@@ -118,11 +123,16 @@ class DecisionManager:
                             
 
                     elif task_name == "timeout":
-                        decision = Decision.TIMEOUT
+                        seat_status = seatStatus_counter.most_common(1)
+                        if seat_status == SeatStatus.SEAT_EMPTY or seat_status == SeatStatus.NO_CHAIRS_NO_PEOPLE:
+                            decision = Decision.TIMEOUT_NO_USER_PRESENT
+                        else:
+                            decision = Decision.TIMEOUT
                         break
 
                     # Remove the completed task from the dictionary
-                    del tasks[task]
+                    if task_name != "seat": #not removing seat because it alone isn't enough to make decision
+                        del tasks[task]
 
                 if decision is not None:
                     print(f"Decision made: {decision}")
