@@ -1,34 +1,24 @@
 import httpx
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends
-from pydantic import HttpUrl, BaseModel, Field
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends, Form, File, UploadFile
+from pydantic import HttpUrl
 from contextlib import asynccontextmanager
-from input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream
-from decision_manager import DecisionManager, Decision
+from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream
+from robocof_mood.decision_manager import DecisionManager
 
 LIVESTREAM_URL = "http://10.143.186.203:5000/video_feed"
-# Default timeout in seconds
 DEFAULT_TIMEOUT = 15
-MAX_TIMEOUT = 60 * 2  # Maximum timeout allowed for a decision request
+MAX_TIMEOUT = 120  # 60 * 2
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler for the FastAPI application.
-    This function is called when the application starts up and shuts down.
-
-    Exposes the `decision_manager` instance to the application context.
-    """
-    # ------------- STARTUP ------------- #
     input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
     decision_manager = DecisionManager(input_stream, timeout=DEFAULT_TIMEOUT)
-
     app.state.decision_manager = decision_manager
-
     try:
-        yield  # Application is running
+        yield
     finally:
-        # ------------- SHUTDOWN ------------- #
         print("Application shutdown complete.")
 
 
@@ -39,28 +29,19 @@ def get_dm(request: Request) -> DecisionManager:
     return request.app.state.decision_manager
 
 
-# Default route
 @app.get("/")
 async def root():
     return {"message": "Welcome to the RoboCof decision-making API!"}
 
 
-class DecisionRequest(BaseModel):
-    callback_url: HttpUrl
-    robot_run_id: int = Field(ge=1, description="Unique identifier for the robot run")
-    timeout: int = Field(DEFAULT_TIMEOUT, ge=1, le=MAX_TIMEOUT)
+async def _decide_and_callback(dm: DecisionManager, callback: HttpUrl, robot_run_id: int, image_bytes: bytes | None = None):
+    if image_bytes:
+        # TODO use face recognition
+        pass
 
-
-async def _decide_and_callback(
-    dm: DecisionManager, callback: HttpUrl, robot_run_id: int
-):
-    """
-    1. Wait for the DecisionManager to finish.
-    2. POST the result to the client-supplied callback URL.
-    """
     try:
         decision = await dm.make_decision()
-    except Exception as exc:  # still log or alert
+    except Exception as exc:
         print(f"[decision] failed: {exc}")
         return
 
@@ -74,24 +55,24 @@ async def _decide_and_callback(
         print(f"[callback] POST {callback} failed: {exc}")
 
 
-# Get a decision request
 @app.post("/decision", status_code=202)
 async def decision_entrypoint(
-    body: DecisionRequest,
     background_tasks: BackgroundTasks,
+    image: UploadFile | None = File(default=None),
+    callback_url: HttpUrl = Form(...),
+    robot_run_id: int = Form(...),
+    timeout: int = Form(DEFAULT_TIMEOUT),
     dm: DecisionManager = Depends(get_dm),
 ):
-    """
-    1. Validate timeout bounds (handled by Pydantic).
-    2. Adjust DecisionManager timeout.
-    3. Kick off background task.
-    4. Respond 202 Accepted immediately.
-    """
-    dm.timeout = body.timeout
+    if timeout < 1 or timeout > MAX_TIMEOUT:
+        raise HTTPException(status_code=400, detail=f"Timeout must be between 1 and {MAX_TIMEOUT} seconds.")
 
-    # Fire-and-forget
+    image_bytes = None if image is None else image.file.read()
+
+    dm.timeout = timeout
+
     background_tasks.add_task(
-        _decide_and_callback, dm, body.callback_url, body.robot_run_id
+        _decide_and_callback, dm, callback_url, robot_run_id, image_bytes
     )
 
     return {"detail": "Decision accepted, result will be sent to callback"}
