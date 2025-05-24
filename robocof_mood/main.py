@@ -8,7 +8,7 @@ from decision_manager import DecisionManager, Decision
 LIVESTREAM_URL = "http://10.143.186.203:5000/video_feed"
 # Default timeout in seconds
 DEFAULT_TIMEOUT = 15
-MAX_TIMEOUT = 60*2  # Maximum timeout allowed for a decision request
+MAX_TIMEOUT = 60 * 2  # Maximum timeout allowed for a decision request
 
 
 @asynccontextmanager
@@ -21,9 +21,9 @@ async def lifespan(app: FastAPI):
     # ------------- STARTUP ------------- #
     input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
     decision_manager = DecisionManager(input_stream, timeout=DEFAULT_TIMEOUT)
-    
+
     app.state.decision_manager = decision_manager
-    
+
     try:
         yield  # Application is running
     finally:
@@ -33,8 +33,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 def get_dm(request: Request) -> DecisionManager:
     return request.app.state.decision_manager
+
 
 # Default route
 @app.get("/")
@@ -44,13 +46,12 @@ async def root():
 
 class DecisionRequest(BaseModel):
     callback_url: HttpUrl
-    robot_run_id: int = Field(ge=1, description="Unique identifier for the robot run")	
+    robot_run_id: int = Field(ge=1, description="Unique identifier for the robot run")
     timeout: int = Field(DEFAULT_TIMEOUT, ge=1, le=MAX_TIMEOUT)
 
+
 async def _decide_and_callback(
-    dm: DecisionManager,
-    callback: HttpUrl,
-    robot_run_id: int
+    dm: DecisionManager, callback: HttpUrl, robot_run_id: int
 ):
     """
     1. Wait for the DecisionManager to finish.
@@ -58,7 +59,7 @@ async def _decide_and_callback(
     """
     try:
         decision = await dm.make_decision()
-    except Exception as exc:                       # still log or alert
+    except Exception as exc:  # still log or alert
         print(f"[decision] failed: {exc}")
         return
 
@@ -70,6 +71,7 @@ async def _decide_and_callback(
             r.raise_for_status()
     except Exception as exc:
         print(f"[callback] POST {callback} failed: {exc}")
+
 
 # Get a decision request
 @app.post("/decision", status_code=202)
@@ -88,14 +90,13 @@ async def decision_entrypoint(
 
     # Fire-and-forget
     background_tasks.add_task(
-        _decide_and_callback,
-        dm,
-        body.callback_url,
-        body.robot_run_id
+        _decide_and_callback, dm, body.callback_url, body.robot_run_id
     )
 
     return {"detail": "Decision accepted, result will be sent to callback"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("robocof_mood.main:app", host="0.0.0.0", port=8000, reload=True)

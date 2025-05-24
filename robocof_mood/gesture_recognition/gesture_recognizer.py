@@ -1,5 +1,4 @@
 import asyncio
-from time import sleep
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -23,7 +22,12 @@ class Gesture(Enum):
 
 
 class GestureRecognizer:
-    def __init__(self, gestures: list[Gesture], input_stream: InputStream, debug_mode: bool = False):
+    def __init__(
+        self,
+        gestures: list[Gesture],
+        input_stream: InputStream,
+        debug_mode: bool = False,
+    ):
         """Constructor
 
         Args:
@@ -33,7 +37,13 @@ class GestureRecognizer:
         """
         self.__gestures = gestures
         base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
-        options = vision.GestureRecognizerOptions(base_options=base_options, num_hands=2, min_hand_detection_confidence=0.2, min_hand_presence_confidence=0.2, min_tracking_confidence=0.2)
+        options = vision.GestureRecognizerOptions(
+            base_options=base_options,
+            num_hands=2,
+            min_hand_detection_confidence=0.2,
+            min_hand_presence_confidence=0.2,
+            min_tracking_confidence=0.2,
+        )
         self.__recognizer = vision.GestureRecognizer.create_from_options(options)
         self.__input_stream = input_stream
         self.__debug_mode = debug_mode
@@ -70,7 +80,6 @@ class GestureRecognizer:
 
             # yield control to allow other tasks to run
             await asyncio.sleep(0.01)
-            
 
     def recognize(self, image: mp.Image) -> list[Gesture]:
         """
