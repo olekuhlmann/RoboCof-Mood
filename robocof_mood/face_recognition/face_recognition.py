@@ -30,6 +30,10 @@ class FaceRecognizer:
         self.__debug_mode = debug_mode
         self.__known_face_encodings = known_face_encodings
         self.__known_face_names = face_names
+        self._stop_recognition = False  
+
+    
+                
 
     def add_face_image(self, name: str, image_path: str):
         """Adds a new face to the recognizer from an image file.
@@ -42,6 +46,22 @@ class FaceRecognizer:
         encoding = face_recognition.face_encodings(image)[0]
         self.add_face_encoding(name, encoding)
 
+    def __get_image_from_stream(self) -> Optional[np.ndarray]:
+        """
+        Get an image from the input stream.
+
+        Args:
+            input_stream (InputStream): The input stream to get the image from.
+
+        Returns:
+            np.ndarray: The image as a numpy array.
+        """
+        frame = self.__input_stream.capture_frame()
+        if frame is None:
+            print("[Gesture Recognizer]: Failed to capture image.")
+            return None
+        return frame
+    
     def find_face_image(self, name: str, image_path: str) -> Optional[np.ndarray]:
         """Finds a face in an image file and returns the face image.
 
@@ -164,25 +184,31 @@ class FaceRecognizer:
         Returns:
             list[str]: The names of the recognized faces.
         """
-        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(rgb_image)
-        face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
-
         recognized_faces = []
-        for face_encoding in face_encodings:
-            # See if the face is a match for the known face(s)
-            matches = face_recognition.compare_faces(self.__known_face_encodings, face_encoding)
-            name = "Unknown"
+        try:
+            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # Ensure the array is C-contiguous for dlib compatibility
+            rgb_image = np.ascontiguousarray(rgb_image)
 
-            # Or instead, use the known face with the smallest distance to the new face
-            if True in matches:
-                first_match_index = matches.index(True)
-                name = self.__known_face_names[first_match_index]
+            # Find all the faces and face encodings in the current frame of video
+            face_locations = face_recognition.face_locations(rgb_image)
+            face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
 
-            recognized_faces.append(name)
+            for face_encoding in face_encodings:
+                # See if the face is a match for the known face(s)
+                matches = face_recognition.compare_faces(self.__known_face_encodings, face_encoding)
+                name = "Unknown"
+
+                # Or instead, use the known face with the smallest distance to the new face
+                if True in matches:
+                    first_match_index = matches.index(True)
+                    name = self.__known_face_names[first_match_index]
+
+                recognized_faces.append(name)
+        except Exception as e:
+            if self.__debug_mode:
+                print(f"[Face Recognizer][Error]: {e}")
 
         return recognized_faces
 
@@ -220,13 +246,18 @@ class FaceRecognizer:
         """
         Asynchronously recognizes faces from the input stream in a loop.
         This method will continuously capture frames from the input stream and recognize faces in each frame.
+        Returns:
+            Optional[list[str]]: The names of the recognized faces or None if stopped without recognition.
         """
-        while True:
+        self._stop_recognition = False  # Reset stop flag at start
+        while not self._stop_recognition:
             recognized_faces = await self.recognize_from_stream()
-            if recognized_faces is not None:
+            if recognized_faces:
                 if self.__debug_mode:
                     print(f"[Face Recognizer]: Recognized faces: {recognized_faces}")
+                return recognized_faces  # Return as soon as something is recognized
             await asyncio.sleep(0.1)
+        return None  # Return None if stopped without recognition
 
     def start_recognition_loop(self):
         """
@@ -235,6 +266,12 @@ class FaceRecognizer:
         """
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.recognize_from_stream_loop())
+
+    def stop_async_recognition(self):
+        """
+        Signals the async recognition loop to stop.
+        """
+        self._stop_recognition = True
 
     @staticmethod
     def stop_recognition_loop():
@@ -286,3 +323,45 @@ class FaceRecognizer:
             print("[Face Recognizer]: Debug mode enabled.")
         else:
             print("[Face Recognizer]: Debug mode disabled.")
+
+    async def is_person_in_stream(self, name: str) -> Optional[bool]:
+        """
+        Asynchronously checks if a person is in the next frame from the input stream.
+
+        Args:
+            name (str): The name of the person to check for.
+
+        Returns:
+            Optional[bool]: True if the person is found, False if not, None if no frame.
+        """
+        frame = await self.__get_image_from_stream()
+        if frame is None:
+            return None
+        return self.is_person_in_image(frame, name)
+
+    async def is_person_in_stream_loop(self, name: str) -> Optional[bool]:
+        """
+        Asynchronously checks if a person is in the input stream in a loop.
+        Returns as soon as the person is detected or the loop is stopped.
+
+        Args:
+            name (str): The name of the person to check for.
+
+        Returns:
+            Optional[bool]: True if the person is found, None if stopped without detection.
+        """
+        self._stop_recognition = False  # Reset stop flag at start
+        while not self._stop_recognition:
+            found = await self.is_person_in_stream(name)
+            if found:
+                if self.__debug_mode:
+                    print(f"[Face Recognizer]: Person '{name}' detected in stream.")
+                return True
+            await asyncio.sleep(0.1)
+        return None  # Return None if stopped without detection
+
+    def stop_person_search(self):
+        """
+        Signals the async person search loop to stop.
+        """
+        self._stop_recognition = True

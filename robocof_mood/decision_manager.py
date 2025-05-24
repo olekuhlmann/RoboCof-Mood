@@ -1,9 +1,11 @@
 import asyncio
+from typing import Optional
 from robocof_mood.input_stream.input_stream import InputStream
 from robocof_mood.input_stream.webcam_input_stream import WebcamInputStream
 from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
 from robocof_mood.gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from enum import Enum
+from robocof_mood.face_recognition.face_recognition import FaceRecognizer
 
 
 class Decision(Enum):
@@ -37,6 +39,9 @@ class DecisionManager:
         self.__gesture_recognizer = GestureRecognizer(
             GESTURES_POSITIVE + GESTURES_NEGATIVE, input_stream, debug_mode=debug_mode
         )
+        self.__face_recognizer = FaceRecognizer(
+            input_stream, debug_mode=debug_mode
+        )
         self.__debug_mode = debug_mode
         self.__timeout = timeout if not debug_mode else float("inf")
 
@@ -62,7 +67,7 @@ class DecisionManager:
         async def face_recognition_task():
             """A task to run the face recognition in the background."""
             # Placeholder for face recognition logic
-            return -1
+            return await self.__face_recognizer.is_person_in_stream("");
 
         async def timeout_task(timeout: int):
             """A task to wait for a timeout (in seconds)"""
@@ -102,7 +107,15 @@ class DecisionManager:
                     elif task_name == "seat":
                         pass
                     elif task_name == "face":
-                        pass
+                        result:Optional[bool] = result
+                        if result is None:
+                            decision = Decision.TIMEOUT_NO_USER_PRESENT
+                        elif result == False:
+                            decision = Decision.TIMEOUT_WRONG_USER_PRESENT
+                        else:
+                            decision = Decision.TIMEOUT_CORRECT_USER_PRESENT
+                        break
+                            
 
                     elif task_name == "timeout":
                         decision = Decision.TIMEOUT
