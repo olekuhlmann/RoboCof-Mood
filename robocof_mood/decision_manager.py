@@ -109,7 +109,8 @@ class DecisionManager:
                         pass
 
                     elif task_name == "timeout":
-                        seat_status = seatStatus_counter.most_common(1)
+                        seat_status = seatStatus_counter.most_common(1)[0][0]
+                        print(f"Seat status counter: {seatStatus_counter}")
                         if seat_status == SeatStatus.SEAT_EMPTY or seat_status == SeatStatus.NO_CHAIRS_NO_PEOPLE:
                             decision = Decision.TIMEOUT_NO_USER_PRESENT
                         else:
