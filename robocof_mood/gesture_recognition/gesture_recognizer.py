@@ -4,7 +4,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from enum import Enum
 from typing import Optional
-from input_stream.input_stream import InputStream
+from robocof_mood.input_stream.input_stream import InputStream
 
 
 MODEL_PATH = "models/gesture_recognizer.task"

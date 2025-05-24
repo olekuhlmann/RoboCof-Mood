@@ -1,12 +1,13 @@
 import httpx
-import uvicorn
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends, Form, File, UploadFile
-from pydantic import HttpUrl
+from fastapi import FastAPI, Request, BackgroundTasks, Depends, Form, File, UploadFile, HTTPException
+from pydantic import HttpUrl, BaseModel, Field
 from contextlib import asynccontextmanager
 from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream
+from robocof_mood.input_stream.webcam_input_stream import WebcamInputStream
 from robocof_mood.decision_manager import DecisionManager
 
-LIVESTREAM_URL = "http://10.143.186.203:5000/video_feed"
+LIVESTREAM_URL = "http://192.168.137.204:8000/video_feed"
+# Default timeout in seconds
 DEFAULT_TIMEOUT = 15
 MAX_TIMEOUT = 120  # 60 * 2
 
@@ -14,6 +15,7 @@ MAX_TIMEOUT = 120  # 60 * 2
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     input_stream = MJPEGAPIInputStream(LIVESTREAM_URL)
+    #input_stream = WebcamInputStream() # for debugging
     decision_manager = DecisionManager(input_stream, timeout=DEFAULT_TIMEOUT)
     app.state.decision_manager = decision_manager
     try:
@@ -78,5 +80,5 @@ async def decision_entrypoint(
     return {"detail": "Decision accepted, result will be sent to callback"}
 
 
-if __name__ == "__main__":
-    uvicorn.run("robocof_mood.main:app", host="0.0.0.0", port=8000, reload=True)
+
+# start using uvicorn robocof_mood.main:app --reload   

@@ -1,8 +1,8 @@
 import asyncio
-from input_stream.input_stream import InputStream
-from input_stream.webcam_input_stream import WebcamInputStream
-from input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
-from gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
+from robocof_mood.input_stream.input_stream import InputStream
+from robocof_mood.input_stream.webcam_input_stream import WebcamInputStream
+from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
+from robocof_mood.gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from enum import Enum
 
 
@@ -139,6 +139,7 @@ class DecisionManager:
     timeout = property(__get_timeout, __set_timeout)
 
 
+# start using command python -m robocof_mood.decision_manager from the root dir
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()

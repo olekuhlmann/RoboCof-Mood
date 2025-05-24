@@ -1,5 +1,5 @@
 from __future__ import annotations
-from input_stream.input_stream import InputStream
+from robocof_mood.input_stream.input_stream import InputStream
 
 import cv2
 import numpy as np
@@ -37,11 +37,19 @@ class MJPEGAPIInputStream(InputStream):
         self._latest_frame: np.ndarray | None = None
         self._frame_lock = threading.Lock()
         self._jpeg_q = deque(maxlen=max_queue)
+        
+        self._DEBUG_WIN = "Debug Frame"
 
     # ------------------------------------------------------------------ #
     # public API required by InputStream
     # ------------------------------------------------------------------ #
     def start(self):
+        # reset internal state
+        self._stop_flag.clear()          
+        self._jpeg_q.clear()             
+        with self._frame_lock:
+            self._latest_frame = None
+            
         self._session = requests.Session()
         self._worker = threading.Thread(target=self._reader, daemon=True)
         self._worker.start()
@@ -75,8 +83,18 @@ class MJPEGAPIInputStream(InputStream):
         self._stop_flag.set()
         if self._worker:
             self._worker.join(timeout=3)
+            
         if self._session:
             self._session.close()
+        # close the debug window if it exists ─
+        try:
+            if cv2.getWindowProperty(self._DEBUG_WIN,
+                                     cv2.WND_PROP_VISIBLE) >= 0:
+                cv2.destroyWindow(self._DEBUG_WIN)
+                # let the window manager process events
+                cv2.waitKey(1)
+        except cv2.error:
+            pass
 
     # ------------------------------------------------------------------ #
     # internal reader
