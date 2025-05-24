@@ -42,6 +42,43 @@ class FaceRecognizer:
         encoding = face_recognition.face_encodings(image)[0]
         self.add_face_encoding(name, encoding)
 
+    def find_face_image(self, name: str, image_path: str) -> Optional[np.ndarray]:
+        """Finds a face in an image file and returns the face image.
+
+        Args:
+            name (str): The name of the person.
+            image_path (str): The path to the image file.
+
+        Returns:
+            Optional[np.ndarray]: The face image if found, None otherwise.
+        """
+        image = face_recognition.load_image_file(image_path)
+        face_locations = face_recognition.face_locations(image)
+        if not face_locations:
+            print(f"[Face Recognizer]: No face found for {name} in {image_path}.")
+            return None
+        top, right, bottom, left = face_locations[0]
+        return image[top:bottom, left:right]
+    
+    def find_face_image_from_array(self, name: str, image: np.ndarray) -> Optional[np.ndarray]:
+        """Finds a face in an image array and returns the face image.
+
+        Args:
+            name (str): The name of the person.
+            image (np.ndarray): The image array.
+
+        Returns:
+            Optional[np.ndarray]: The face image if found, None otherwise.
+        """
+        face_locations = face_recognition.face_locations(image)
+        if not face_locations:
+            print(f"[Face Recognizer]: No face found for {name}.")
+            return None
+        top, right, bottom, left = face_locations[0]
+        return image[top:bottom, left:right]
+    
+
+
     def add_face_image_from_array(self, name: str, image: np.ndarray):
         """Adds a new face to the recognizer from an image array.
 
@@ -90,6 +127,32 @@ class FaceRecognizer:
             list[np.ndarray]: The list of known face encodings.
         """
         return self.__known_face_encodings
+    
+    def is_person_in_image(self, image: np.ndarray, name: str) -> bool:
+        """
+        Checks if a person is in the given image.
+
+        Args:
+            image (np.ndarray): The image to check.
+            name (str): The name of the person to check for.
+
+        Returns:
+            bool: True if the person is in the image, False otherwise.
+        """
+        if name not in self.__known_face_names:
+            print(f"[Face Recognizer]: Person {name} not found in known faces.")
+            return False
+
+        encoding = self.__known_face_encodings[self.__known_face_names.index(name)]
+        face_locations = face_recognition.face_locations(image)
+        face_encodings = face_recognition.face_encodings(image, face_locations)
+
+        for face_encoding in face_encodings:
+            matches = face_recognition.compare_faces([encoding], face_encoding)
+            if matches[0]:
+                return True
+
+        return False
 
     def recognize(self, image: np.ndarray) -> list[str]:
         """
