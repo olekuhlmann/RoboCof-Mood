@@ -6,7 +6,7 @@ from robocof_mood.input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream
 from robocof_mood.gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from robocof_mood.seat_recognition.seat_recognizer import SeatRecognizer, SeatStatus 
 from enum import Enum
-from collections import Counterfrom 
+from collections import Counter
 from robocof_mood.face_recognition.face_recognition import FaceRecognizer
 
 
