@@ -1,3 +1,4 @@
+import numpy as np
 from .input_stream import InputStream
 import cv2
 
@@ -13,12 +14,15 @@ class WebcamInputStream(InputStream):
             print("Error: Could not access the webcam.")
             exit()
 
-    def capture_frame(self):
+    def capture_frame(self, square_crop: bool = False) -> np.ndarray | None:
         """Capture and return a frame from the webcam."""
         ret, frame = self.cap.read()
         if not ret:
             print("Error: Failed to capture image.")
             return None
+        
+        if square_crop:
+            frame = self.center_crop_square(frame)
         
         # 🖼️ Show the frame for debugging
         cv2.imshow("Debug Frame", frame)

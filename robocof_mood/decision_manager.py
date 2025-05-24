@@ -1,6 +1,7 @@
 import asyncio
 from input_stream.input_stream import InputStream
 from input_stream.webcam_input_stream import WebcamInputStream
+from input_stream.api_mjpeg_input_stream import MJPEGAPIInputStream, smoke_test
 from gesture_recognition.gesture_recognizer import GestureRecognizer, Gesture
 from enum import Enum
 
@@ -16,17 +17,22 @@ class Decision(Enum):
 class DecisionManager:
     """A class to manage the decision-making process for the robot of whether or not to carry out an action."""
 
-    def __init__(self, input_stream: InputStream, timeout: int = 15):
+    def __init__(
+        self, input_stream: InputStream, timeout: int = 15, debug_mode: bool = False
+    ):
         """Constructor
 
         Args:
             live_feed (LiveFeed): The live feed object to get the current image from.
+            timeout (int, optional): The timeout in seconds to wait for a decision. Defaults to 15.
+            debug_mode (bool, optional): Does not return any decision and only prints debug information. Defaults to False.
         """
         self.input_stream = input_stream
         self.__gesture_recognizer = GestureRecognizer(
-            [Gesture.THUMB_UP, Gesture.OPEN_PALM], input_stream
+            [Gesture.THUMB_UP, Gesture.OPEN_PALM], input_stream, debug_mode=debug_mode
         )
-        self.__timeout = timeout
+        self.__debug_mode = debug_mode
+        self.__timeout = timeout if not debug_mode else float("inf")
 
     async def make_decision(self) -> Decision:
         """
@@ -119,9 +125,10 @@ class DecisionManager:
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
+    # input_stream = stream = MJPEGAPIInputStream("http://10.143.186.203:5000/video_feed")
 
     async def main():
-        decision_manager = DecisionManager(input_stream)
+        decision_manager = DecisionManager(input_stream, debug_mode=True)
         decision = await decision_manager.make_decision()
         print(f"Final decision: {decision}")
 

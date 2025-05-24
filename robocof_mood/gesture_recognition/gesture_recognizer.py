@@ -50,8 +50,8 @@ class GestureRecognizer:
         while True:
             frame = self.__input_stream.capture_frame()
             if frame is None:
-                print("Error: Failed to capture image.")
-                break
+                print("[Gesture Recognizer]: Failed to capture image.")
+                continue
 
             # Convert the frame to a MediaPipe Image object
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
@@ -70,6 +70,7 @@ class GestureRecognizer:
 
             # yield control to allow other tasks to run
             await asyncio.sleep(0.01)
+            
 
     def recognize(self, image: mp.Image) -> list[Gesture]:
         """
