@@ -1,3 +1,12 @@
+import cv2
+from mediapipe.python.solutions import drawing_utils as mp_drawing
+from mediapipe.python.solutions import hands as mp_hands
+from mediapipe.framework.formats import landmark_pb2
+
+
+
+
+
 import asyncio
 from time import sleep
 import mediapipe as mp
@@ -5,7 +14,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from enum import Enum
 from typing import Optional
-from input_stream.input_stream import InputStream
+from robocof_mood.input_stream.input_stream import InputStream
 
 
 MODEL_PATH = "models/gesture_recognizer.task"
@@ -23,7 +32,7 @@ class Gesture(Enum):
 
 
 class GestureRecognizer:
-    def __init__(self, gestures: list[Gesture], input_stream: InputStream, debug_mode: bool = False):
+    def __init__(self, gestures: list[Gesture], input_stream: InputStream, debug_mode: bool = True):
         """Constructor
 
         Args:
@@ -33,7 +42,12 @@ class GestureRecognizer:
         """
         self.__gestures = gestures
         base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
-        options = vision.GestureRecognizerOptions(base_options=base_options, num_hands=2, min_hand_detection_confidence=0.2, min_hand_presence_confidence=0.2, min_tracking_confidence=0.2)
+        options = vision.GestureRecognizerOptions(
+            base_options=base_options, num_hands=2,
+            min_hand_detection_confidence=0.2,
+            min_hand_presence_confidence=0.2,
+            min_tracking_confidence=0.2
+        )
         self.__recognizer = vision.GestureRecognizer.create_from_options(options)
         self.__input_stream = input_stream
         self.__debug_mode = debug_mode
@@ -52,6 +66,15 @@ class GestureRecognizer:
             if frame is None:
                 print("Error: Failed to capture image.")
                 break
+
+            # In capture_frame() before returning
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            equalized = cv2.equalizeHist(gray)
+            frame = cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)
+
+            alpha = 1.2  # contrast
+            beta = 20  # brightness
+            frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
 
             # Convert the frame to a MediaPipe Image object
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
@@ -84,6 +107,10 @@ class GestureRecognizer:
         result = self.__recognizer.recognize(image)
         gestures = self.__parse_result(result)
         print(f"[DEBUG] Recognized gestures: {gestures}")
+
+        if self.__debug_mode:
+            self.__visualize_debug(image, result)
+
         return gestures
 
     def __parse_result(self, result) -> list[Gesture]:
@@ -130,3 +157,47 @@ class GestureRecognizer:
         return self.__gestures
 
     gestures = property(__get_gestures)
+
+    def __visualize_debug(self, mp_image: mp.Image, result):
+        frame_rgb = mp_image.numpy_view()
+        frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+
+        # ✅ Convert task landmarks to protobuf landmarks
+        if hasattr(result, "hand_landmarks") and result.hand_landmarks:
+            for task_landmarks in result.hand_landmarks:
+                proto_landmarks = landmark_pb2.NormalizedLandmarkList(
+                    landmark=[
+                        landmark_pb2.NormalizedLandmark(
+                            x=l.x,
+                            y=l.y,
+                            z=l.z
+                        ) for l in task_landmarks
+                    ]
+                )
+                mp_drawing.draw_landmarks(
+                    frame_bgr,
+                    proto_landmarks,
+                    mp_hands.HAND_CONNECTIONS,
+                    mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                    mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2),
+                )
+
+        # Draw gesture labels if available
+        if result.gestures:
+            for gesture_list in result.gestures:
+                for gesture in gesture_list:
+                    category = gesture.category_name
+                    score = gesture.score
+                    cv2.putText(
+                        frame_bgr,
+                        f"{category} ({score:.2f})",
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (255, 255, 255),
+                        2,
+                    )
+
+        cv2.imshow("Gesture Debug", frame_bgr)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            exit()
