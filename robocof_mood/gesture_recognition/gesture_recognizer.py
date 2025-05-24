@@ -48,7 +48,7 @@ class GestureRecognizer:
             Gesture: The recognized gesture.
         """
         while True:
-            frame = self.__input_stream.capture_frame()
+            frame = self.__input_stream.capture_frame(square_crop=True, transform=True)
             if frame is None:
                 print("[Gesture Recognizer]: Failed to capture image.")
                 continue

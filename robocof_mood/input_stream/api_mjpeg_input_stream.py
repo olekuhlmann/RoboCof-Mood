@@ -46,7 +46,7 @@ class MJPEGAPIInputStream(InputStream):
         self._worker = threading.Thread(target=self._reader, daemon=True)
         self._worker.start()
 
-    def capture_frame(self, square_crop: bool = False) -> np.ndarray | None:
+    def capture_frame(self, square_crop: bool = False, transform: bool = False) -> np.ndarray | None:
         """
         Returns a *copy* of the most recent frame so the caller can mutate it
         without racing the reader thread. Returns None until first frame lands.
@@ -59,6 +59,9 @@ class MJPEGAPIInputStream(InputStream):
                 frame = self.center_crop_square(self._latest_frame.copy())
             else:
                 frame = self._latest_frame.copy()
+            
+            if transform:
+                frame = self.transform_frame(frame)
                 
             # 🖼️ Show the frame for debugging
             cv2.imshow("Debug Frame", frame)
