@@ -8,10 +8,12 @@ from enum import Enum
 
 class Decision(Enum):
     USER_ABORT = 0
-    TIMEOUT = 1
-    CARRY_OUT_ACTION = 2
-    NO_USER_PRESENT = 3
-    ERROR = 4
+    CARRY_OUT_ACTION = 1
+    TIMEOUT_NO_USER_PRESENT = 2
+    TIMEOUT_WRONG_USER_PRESENT = 3
+    TIMEOUT_CORRECT_USER_PRESENT = 4
+    TIMEOUT = 5
+    ERROR = 6
 
 
 class DecisionManager:
@@ -120,16 +122,16 @@ class DecisionManager:
             self.input_stream.stop()
 
         return Decision.ERROR
-    
+
     def __get_timeout(self) -> int:
         """Get the timeout for the decision-making process."""
         return self.__timeout
-    
+
     def __set_timeout(self, timeout: int):
         """Set the timeout for the decision-making process."""
         if not self.__debug_mode:
             self.__timeout = timeout
-            
+
     timeout = property(__get_timeout, __set_timeout)
 
 
