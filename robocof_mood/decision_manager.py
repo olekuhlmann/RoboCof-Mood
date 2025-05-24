@@ -16,6 +16,10 @@ class Decision(Enum):
     ERROR = 6
 
 
+GESTURES_POSITIVE = [Gesture.THUMB_UP, Gesture.CLOSED_FIST]
+GESTURES_NEGATIVE = [Gesture.OPEN_PALM]
+
+
 class DecisionManager:
     """A class to manage the decision-making process for the robot of whether or not to carry out an action."""
 
@@ -31,7 +35,7 @@ class DecisionManager:
         """
         self.input_stream = input_stream
         self.__gesture_recognizer = GestureRecognizer(
-            [Gesture.THUMB_UP, Gesture.OPEN_PALM], input_stream, debug_mode=debug_mode
+            GESTURES_POSITIVE + GESTURES_NEGATIVE, input_stream, debug_mode=debug_mode
         )
         self.__debug_mode = debug_mode
         self.__timeout = timeout if not debug_mode else float("inf")
@@ -88,10 +92,10 @@ class DecisionManager:
                     print(f"Task {task_name} completed with result: {result}")
 
                     if task_name == "gesture":
-                        if Gesture.THUMB_UP in result:
+                        if any(gesture in result for gesture in GESTURES_POSITIVE):
                             decision = Decision.CARRY_OUT_ACTION
                             break
-                        if Gesture.OPEN_PALM in result:
+                        if any(gesture in result for gesture in GESTURES_NEGATIVE):
                             decision = Decision.USER_ABORT
                             break
 
@@ -138,7 +142,7 @@ class DecisionManager:
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
-    # input_stream = stream = MJPEGAPIInputStream("http://10.143.186.203:5000/video_feed")
+    # input_stream = stream = MJPEGAPIInputStream("http://192.168.137.203:8000/video_feed")
 
     async def main():
         decision_manager = DecisionManager(input_stream, debug_mode=True)

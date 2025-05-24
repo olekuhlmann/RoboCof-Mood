@@ -1,4 +1,5 @@
 import httpx
+import uvicorn
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends
 from pydantic import HttpUrl, BaseModel, Field
 from contextlib import asynccontextmanager
@@ -97,6 +98,4 @@ async def decision_entrypoint(
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run("robocof_mood.main:app", host="0.0.0.0", port=8000, reload=True)
