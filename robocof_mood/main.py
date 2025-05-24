@@ -49,7 +49,7 @@ async def _decide_and_callback(dm: DecisionManager, callback: HttpUrl, robot_run
         dm.set_image_from_user(name, img_np)
 
     try:
-        decision = await dm.make_decision()
+        decision = await dm.make_decision(name=name)
     except Exception as exc:
         print(f"[decision] failed: {exc}")
         return

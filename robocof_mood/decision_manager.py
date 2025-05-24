@@ -7,7 +7,7 @@ from robocof_mood.gesture_recognition.gesture_recognizer import GestureRecognize
 from robocof_mood.seat_recognition.seat_recognizer import SeatRecognizer, SeatStatus 
 from enum import Enum
 from collections import Counter
-from robocof_mood.face_recognition.face_recognition import FaceRecognizer
+from robocof_mood.face_recognition.face_recognititer import FaceRecognizer
 import numpy as np
 
 
@@ -84,7 +84,7 @@ class DecisionManager:
         tasks = {
             asyncio.create_task(gesture_recognition_task()): "gesture",
             asyncio.create_task(seat_recognition_task()): "seat",
-            asyncio.create_task(face_recognition_task()): "face",
+            asyncio.create_task(face_recognition_task(name=name)): "face",
             asyncio.create_task(timeout_task(self.timeout)): "timeout",
         }
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
     # input_stream = stream = MJPEGAPIInputStream("http://192.168.137.203:8000/video_feed")
-
+    print("Starting decision manager with webcam input stream...")
     async def main():
         decision_manager = DecisionManager(input_stream, debug_mode=True)
         decision = await decision_manager.make_decision()
