@@ -23,20 +23,22 @@ class Gesture(Enum):
 
 
 class GestureRecognizer:
-    def __init__(self, gestures: list[Gesture], input_stream: InputStream):
+    def __init__(self, gestures: list[Gesture], input_stream: InputStream, debug_mode: bool = False):
         """Constructor
 
         Args:
             gestures (list[Gesture]): List of gestures to recognize. Will stop active recognition if one of these gestures is detected.
             input_stream (InputStream): The input stream to capture frames from.
+            debug_mode (bool, optional): If True, will not return any gesture recognized and will only print debug information. Defaults to False.
         """
         self.__gestures = gestures
         base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
         options = vision.GestureRecognizerOptions(base_options=base_options, num_hands=2, min_hand_detection_confidence=0.2, min_hand_presence_confidence=0.2, min_tracking_confidence=0.2)
         self.__recognizer = vision.GestureRecognizer.create_from_options(options)
         self.__input_stream = input_stream
+        self.__debug_mode = debug_mode
 
-    def start(
+    async def start(
         self,
     ) -> list[Gesture]:
         """
@@ -63,11 +65,11 @@ class GestureRecognizer:
                     gesture for gesture in gestures if gesture in self.__gestures
                 ]
                 if recognized_gestures:
-                    #return recognized_gestures TODO uncomment this
-                    pass
+                    if not self.__debug_mode:
+                        return recognized_gestures
 
-            # yield control to allow other tasks to run TODO enable again and make def async
-            # await asyncio.sleep(0.01)
+            # yield control to allow other tasks to run
+            await asyncio.sleep(0.01)
 
     def recognize(self, image: mp.Image) -> list[Gesture]:
         """
