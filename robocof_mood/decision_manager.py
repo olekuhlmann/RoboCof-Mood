@@ -57,6 +57,8 @@ class DecisionManager:
             await asyncio.sleep(timeout)
             return None
 
+        self.input_stream.start()
+
         tasks = {
             asyncio.create_task(gesture_recognition_task()): "gesture",
             asyncio.create_task(seat_recognition_task()): "seat",
@@ -108,6 +110,8 @@ class DecisionManager:
 
         except asyncio.CancelledError as e:
             print(f"Decision-making process was cancelled: {e}")
+        finally:
+            self.input_stream.stop()
 
         return Decision.ERROR
 
@@ -115,12 +119,10 @@ class DecisionManager:
 if __name__ == "__main__":
     # Example usage
     input_stream = WebcamInputStream()
-    input_stream.start()
-    decision_manager = DecisionManager(input_stream)
 
     async def main():
+        decision_manager = DecisionManager(input_stream)
         decision = await decision_manager.make_decision()
-        input_stream.stop()
         print(f"Final decision: {decision}")
 
     asyncio.run(main())
