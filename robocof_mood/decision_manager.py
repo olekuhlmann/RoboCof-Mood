@@ -69,7 +69,7 @@ class DecisionManager:
             asyncio.create_task(gesture_recognition_task()): "gesture",
             asyncio.create_task(seat_recognition_task()): "seat",
             asyncio.create_task(face_recognition_task()): "face",
-            asyncio.create_task(timeout_task(self.__timeout)): "timeout",
+            asyncio.create_task(timeout_task(self.timeout)): "timeout",
         }
 
         try:
@@ -120,6 +120,17 @@ class DecisionManager:
             self.input_stream.stop()
 
         return Decision.ERROR
+    
+    def __get_timeout(self) -> int:
+        """Get the timeout for the decision-making process."""
+        return self.__timeout
+    
+    def __set_timeout(self, timeout: int):
+        """Set the timeout for the decision-making process."""
+        if not self.__debug_mode:
+            self.__timeout = timeout
+            
+    timeout = property(__get_timeout, __set_timeout)
 
 
 if __name__ == "__main__":
