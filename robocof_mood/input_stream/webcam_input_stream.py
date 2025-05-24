@@ -1,5 +1,5 @@
 import numpy as np
-from .input_stream import InputStream
+from robocof_mood.input_stream.input_stream import InputStream
 import cv2
 
 

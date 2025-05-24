@@ -1,5 +1,5 @@
 from __future__ import annotations
-from input_stream.input_stream import InputStream
+from robocof_mood.input_stream.input_stream import InputStream
 
 import cv2
 import numpy as np
