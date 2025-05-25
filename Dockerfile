@@ -18,7 +18,7 @@ ENV PATH="/env/bin:$PATH"
 
 # Copy requirements and install dependencies inside the virtual environment
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt --resume-retries 1
 
 # Copy the rest of your code
 COPY . .
