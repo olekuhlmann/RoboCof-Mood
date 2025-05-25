@@ -30,10 +30,11 @@ class WebcamInputStream(InputStream):
         if transform:
             frame = self.transform_frame(frame)
 
-        # 🖼️ Show the frame for debugging
-        cv2.imshow("Debug Frame", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            exit()  # Press 'q' to exit the window
+        if not transform:
+            # 🖼️ Show the frame for debugging
+            cv2.imshow("Debug Frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                exit()  # Press 'q' to exit the window
 
         return frame
 
