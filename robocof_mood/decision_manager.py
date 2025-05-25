@@ -119,8 +119,7 @@ class DecisionManager:
                         break
 
                     # Remove the completed task from the dictionary
-                    if task_name != "seat": #not removing seat because it alone isn't enough to make decision
-                        del tasks[task]
+                    del tasks[task]
 
                 if decision is not None:
                     print(f"Decision made: {decision}")
