@@ -12,6 +12,7 @@ cycler==0.12.1
 fastapi==0.115.12
 flatbuffers==25.2.10
 fonttools==4.58.0
+gitpython>=3.1.30
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
