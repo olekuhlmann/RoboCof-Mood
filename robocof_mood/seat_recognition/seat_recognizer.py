@@ -145,7 +145,7 @@ class SeatRecognizer:
             return SeatStatus.SEAT_EMPTY
         
         elif result[0]: #chair detected
-            if not result[1]: #if no people detected
+            if not result[1]: #if not people detected
                 return SeatStatus.SEAT_EMPTY
             
             return SeatStatus.SEAT_OCCUPIED
