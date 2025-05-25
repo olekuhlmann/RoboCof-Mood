@@ -13,8 +13,9 @@ class Decision(Enum):
     TIMEOUT_NO_USER_PRESENT = 2
     TIMEOUT_WRONG_USER_PRESENT = 3
     TIMEOUT_CORRECT_USER_PRESENT = 4
-    TIMEOUT = 5
-    ERROR = 6
+    TIMEOUT_USER_PRESENT = 5
+    TIMEOUT = 6
+    ERROR = 7
 
 
 
@@ -114,6 +115,8 @@ class DecisionManager:
                         print("Seat Status:", seat_status )
                         if seat_status == SeatStatus.SEAT_EMPTY or seat_status == SeatStatus.NO_CHAIRS_NO_PEOPLE:
                             decision = Decision.TIMEOUT_NO_USER_PRESENT
+                        elif seat_status == SeatStatus.SEAT_OCCUPIED:
+                            decision = Decision.TIMEOUT_USER_PRESENT
                         else:
                             decision = Decision.TIMEOUT
                         break
