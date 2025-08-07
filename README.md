@@ -86,8 +86,6 @@ The `DecisionManager` returns one of the following outcomes to the main app:
 
     The API will be available at `http://127.0.0.1:8000`.
 
------
-
 ## Contributors
 
 This project was brought to life by:
@@ -96,8 +94,6 @@ This project was brought to life by:
   * **Jonas Jostan** ([@halo34](https://github.com/halo34)) - Face Recognition
   * **Uku** ([@uuuuuu-k](https://github.com/uuuuuu-k)) - Seat Recognition
   * **Lauri** - Gesture Recognition
-
------
 
 ## License
 
